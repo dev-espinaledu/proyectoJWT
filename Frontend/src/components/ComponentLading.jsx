@@ -42,8 +42,8 @@ const LandingPage = () => {
     </div>
 
     <div className="text-center text-white">
-        <h1 className="text-5xl font-bold">Bienvenido a Nuestra Plataforma</h1>
-        <p className="mt-4 text-lg">La mejor experiencia para tus necesidades digitales</p>
+        <h1 className="text-5xl font-bold">Bienvenido</h1>
+        <p className="mt-4 text-lg">La mejor experiencia para ti</p>
     </div>
     </div>
     );

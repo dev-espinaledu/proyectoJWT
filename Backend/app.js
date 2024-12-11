@@ -114,6 +114,23 @@ app.delete('/users/:userId', authenticateToken, (req, res) => {
     }
 });
 
+// Ruta para actualizar usuario
+app.put('/users/:userId', authenticateToken, (req, res) => {
+    try {
+        const userId = parseInt(req.params.userId);
+        const userIndex = users.findIndex(user => user.id === userId);
+        if (userIndex === -1) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+        // Actualizar el usuario
+        users[userIndex].username = req.body.username;
+        res.json({ message: 'Usuario actualizado exitosamente' });
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: 'Error al actualizar el usuario' });
+    }
+}); 
+
 // Inicio del servidor
 app.listen(PORT, () => {
     console.log(`Servidor en funcionamiento en http://localhost:${PORT}`);

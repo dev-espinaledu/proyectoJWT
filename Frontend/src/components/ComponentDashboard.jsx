@@ -1,38 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 
 const Dashboard = () => {
     const [users, setUsers] = useState([]);
     const [error, setError] = useState('');
+    const [editingUser, setEditingUser] = useState(null);
+    const [newUsername, setNewUsername] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Verificar si hay un token de autenticación
         const token = localStorage.getItem('token');
-        
+
         if (!token) {
-            // Si no hay token, redirigir al login
             navigate('/login');
             return;
         }
 
-        // Función para obtener usuarios
         const fetchUsers = async () => {
             try {
-                // Realizar solicitud con el token en los headers
                 const response = await axios.get('http://localhost:3000/users', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                        Authorization: `Bearer ${token}`,
+                    },
                 });
 
                 setUsers(response.data);
             } catch (error) {
                 console.error('Error al obtener usuarios', error);
                 setError('No se pudieron cargar los usuarios');
-                
-                // Si hay un error de autorización, redirigir al login
+
                 if (error.response && error.response.status === 401) {
                     localStorage.removeItem('token');
                     navigate('/login');
@@ -44,7 +42,6 @@ const Dashboard = () => {
     }, [navigate]);
 
     const handleLogout = () => {
-        // Eliminar token y redirigir al login
         localStorage.removeItem('token');
         navigate('/login');
     };
@@ -52,21 +49,54 @@ const Dashboard = () => {
     const handleDeleteUser = async (userId) => {
         try {
             const token = localStorage.getItem('token');
-            
-            // Realizar solicitud de eliminación con el token en los headers
+
             await axios.delete(`http://localhost:3000/users/${userId}`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
-            // Actualizar la lista de usuarios eliminando el usuario borrado
-            setUsers(users.filter(user => user.id !== userId));
+            setUsers(users.filter((user) => user.id !== userId));
         } catch (error) {
             console.error('Error al eliminar usuario', error);
             setError('No se pudo eliminar el usuario');
 
-            // Si hay un error de autorización, redirigir al login
+            if (error.response && error.response.status === 401) {
+                localStorage.removeItem('token');
+                navigate('/login');
+            }
+        }
+    };
+
+    const handleEditUser = (user) => {
+        setEditingUser(user);
+        setNewUsername(user.username);
+    };
+
+    const handleUpdateUser = async () => {
+        try {
+            const token = localStorage.getItem('token');
+
+            const response = await axios.put(
+                `http://localhost:3000/users/${editingUser.id}`,
+                { username: newUsername },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setUsers(users.map((user) =>
+                user.id === editingUser.id ? { ...user, username: response.data.username } : user
+            ));
+
+            setEditingUser(null);
+            setNewUsername('');
+        } catch (error) {
+            console.error('Error al actualizar usuario', error);
+            setError('No se pudo actualizar el usuario');
+
             if (error.response && error.response.status === 401) {
                 localStorage.removeItem('token');
                 navigate('/login');
@@ -75,7 +105,7 @@ const Dashboard = () => {
     };
 
     return (
-        <div 
+        <div
             className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12"
             style={{
                 backgroundImage:
@@ -83,7 +113,7 @@ const Dashboard = () => {
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 backgroundRepeat: "no-repeat",
-                backgroundAttachment: "fixed"
+                backgroundAttachment: "fixed",
             }}
         >
             <div className="relative py-3 sm:max-w-xl sm:mx-auto">
@@ -125,10 +155,16 @@ const Dashboard = () => {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <button
-                                                        onClick={() => handleDeleteUser(user.id)}
-                                                        className="text-red-600 hover:text-red-900"
+                                                        onClick={() => handleEditUser(user)}
+                                                        className="text-gray-400 hover:text-gray-600 mr-2 flex items-center"
                                                     >
-                                                        Eliminar
+                                                        <FaEdit className="mr-1" /> Editar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteUser(user.id)}
+                                                        className="text-teal-600 hover:text-teal-800 flex items-center"
+                                                    >
+                                                        <FaTrash className="mr-1" /> Eliminar
                                                     </button>
                                                 </td>
                                             </tr>
@@ -139,7 +175,7 @@ const Dashboard = () => {
                             <div className="pt-4 flex justify-center">
                                 <button
                                     onClick={handleLogout}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-teal-700 rounded-md hover:bg-teal-900 focus:outline-none focus:ring-2 focus:ring-red-500"
                                 >
                                     Cerrar Sesión
                                 </button>
@@ -148,6 +184,34 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {editingUser && (
+                <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 className="text-lg font-bold mb-4">Editar Usuario</h3>
+                        <input
+                            type="text"
+                            value={newUsername}
+                            onChange={(e) => setNewUsername(e.target.value)}
+                            className="border p-2 w-full mb-4"
+                        />
+                        <div className="flex justify-end">
+                            <button
+                                onClick={() => setEditingUser(null)}
+                                className="px-4 py-2 bg-gray-300 rounded-md mr-2"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleUpdateUser}
+                                className="px-4 py-2 bg-gray-500 text-white rounded-md"
+                            >
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
